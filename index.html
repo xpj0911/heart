@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>爱心表白</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #0a0a1a;
+            color: #fff;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 10;
+        }
+        
+        .title {
+            font-size: 2.8rem;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #ff0080, 0 0 20px #ff0080;
+            color: #ff66b2;
+            letter-spacing: 3px;
+            animation: pulse 2s infinite;
+        }
+        
+        .message {
+            font-size: 1.5rem;
+            max-width: 800px;
+            line-height: 1.8;
+            margin-bottom: 30px;
+            padding: 0 20px;
+            text-shadow: 0 0 5px #ff66b2;
+            color: #ffccdd;
+        }
+        
+        .heart-btn {
+            background: linear-gradient(to right, #ff0080, #ff66b2);
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            padding: 15px 40px;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 0 20px #ff0080;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+        
+        .heart-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px #ff0080;
+        }
+        
+        .hidden-message {
+            display: none;
+            font-size: 1.8rem;
+            margin-top: 30px;
+            padding: 20px;
+            background-color: rgba(255, 102, 178, 0.2);
+            border-radius: 15px;
+            border: 2px solid #ff66b2;
+            animation: fadeIn 1.5s ease;
+            max-width: 700px;
+        }
+        
+        .signature {
+            position: absolute;
+            bottom: 20px;
+            right: 30px;
+            font-size: 1rem;
+            color: #ff99cc;
+            opacity: 0.7;
+        }
+        
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.9; }
+            50% { opacity: 1; }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 768px) {
+            .title { font-size: 2rem; }
+            .message { font-size: 1.2rem; }
+            .heart-btn { padding: 12px 30px; font-size: 1rem; }
+            .hidden-message { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="heartCanvas"></canvas>
+    
+    <div class="container">
+        <h1 class="title">❤️ 给最特别的你 ❤️</h1>
+        
+        <div class="message">
+            在遇见你之前，我从未相信一见钟情；<br>
+            在了解你之后，我才明白什么是灵魂的共鸣。<br>
+            你的笑容是我每日的阳光，你的声音是我最爱的旋律。
+        </div>
+        
+        <button id="showMessage" class="heart-btn">点击查看我的心意</button>
+        
+        <div id="hiddenMessage" class="hidden-message">
+            我喜欢你，不只是因为你的样子，<br>
+            还因为和你在一起时，我的样子。<br>
+            你愿意让我成为那个一直守护在你身边的人吗？<br>
+            <span style="font-size: 2.5rem; display: block; margin-top: 10px;">💖</span>
+        </div>
+        
+        <div class="signature">With love, from someone who adores you</div>
+    </div>
+
+    <script>
+        // Canvas爱心动画
+        const canvas = document.getElementById('heartCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 设置canvas尺寸为窗口大小
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        
+        // 爱心粒子数组
+        let particles = [];
+        const particleCount = 150;
+        
+        // 爱心函数
+        function heartShape(t, size) {
+            // 参数方程：爱心形状
+            const x = 16 * Math.pow(Math.sin(t), 3);
+            const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+            return {
+                x: x * size,
+                y: y * size
+            };
+        }
+        
+        // 粒子类
+        class Particle {
+            constructor() {
+                this.reset();
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 1;
+            }
+            
+            reset() {
+                // 粒子的起始位置在爱心上
+                this.t = Math.random() * Math.PI * 2;
+                const heartSize = 10 + Math.random() * 5;
+                const pos = heartShape(this.t, heartSize);
+                
+                this.originX = pos.x;
+                this.originY = pos.y;
+                
+                this.x = canvas.width/2 + this.originX;
+                this.y = canvas.height/2 + this.originY;
+                
+                this.speed = 0.01 + Math.random() * 0.02;
+                this.color = `hsl(${Math.random() * 20 + 330}, 100%, ${60 + Math.random() * 30}%)`;
+                this.size = Math.random() * 2.5 + 1;
+                this.trail = [];
+                this.maxTrail = 5;
+            }
+            
+            update() {
+                // 更新粒子的位置
+                this.t += this.speed;
+                
+                // 计算爱心上的位置
+                const heartSize = 10 + Math.random() * 5;
+                const pos = heartShape(this.t, heartSize);
+                
+                this.originX = pos.x;
+                this.originY = pos.y;
+                
+                // 计算目标位置
+                const targetX = canvas.width/2 + this.originX;
+                const targetY = canvas.height/2 + this.originY;
+                
+                // 平滑移动
+                this.x += (targetX - this.x) * 0.05;
+                this.y += (targetY - this.y) * 0.05;
+                
+                // 保存轨迹
+                this.trail.push({x: this.x, y: this.y});
+                if (this.trail.length > this.maxTrail) {
+                    this.trail.shift();
+                }
+                
+                // 重置粒子位置如果超出爱心
+                if (this.t > Math.PI * 2) {
+                    this.t = 0;
+                }
+            }
+            
+            draw() {
+                // 绘制粒子轨迹
+                for (let i = 0; i < this.trail.length; i++) {
+                    const point = this.trail[i];
+                    const alpha = i / this.trail.length;
+                    
+                    ctx.beginPath();
+                    ctx.fillStyle = this.color.replace('%)', `%, ${alpha})`);
+                    ctx.arc(point.x, point.y, this.size * alpha, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // 绘制粒子
+                ctx.beginPath();
+                ctx.fillStyle = this.color;
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 粒子发光效果
+                ctx.beginPath();
+                const gradient = ctx.createRadialGradient(
+                    this.x, this.y, 0,
+                    this.x, this.y, this.size * 3
+                );
+                gradient.addColorStop(0, this.color.replace('%)', '%, 0.3)'));
+                gradient.addColorStop(1, this.color.replace('%)', '%, 0)'));
+                
+                ctx.fillStyle = gradient;
+                ctx.arc(this.x, this.y, this.size * 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        // 初始化粒子
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+        
+        // 绘制中央大爱心
+        function drawMainHeart() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const heartSize = 25;
+            
+            ctx.beginPath();
+            
+            // 绘制爱心轮廓
+            for (let t = 0; t <= Math.PI * 2; t += 0.01) {
+                const pos = heartShape(t, heartSize);
+                
+                if (t === 0) {
+                    ctx.moveTo(centerX + pos.x, centerY + pos.y);
+                } else {
+                    ctx.lineTo(centerX + pos.x, centerY + pos.y);
+                }
+            }
+            
+            // 创建爱心渐变
+            const gradient = ctx.createLinearGradient(
+                centerX - 50, centerY - 50,
+                centerX + 50, centerY + 50
+            );
+            gradient.addColorStop(0, '#ff0080');
+            gradient.addColorStop(1, '#ff66b2');
+            
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            // 爱心描边
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#ffffff';
+            ctx.stroke();
+            
+            // 爱心内部光晕
+            const glowGradient = ctx.createRadialGradient(
+                centerX, centerY, 0,
+                centerX, centerY, heartSize * 16
+            );
+            glowGradient.addColorStop(0, 'rgba(255, 0, 128, 0.2)');
+            glowGradient.addColorStop(1, 'rgba(255, 0, 128, 0)');
+            
+            ctx.beginPath();
+            ctx.fillStyle = glowGradient;
+            ctx.arc(centerX, centerY, heartSize * 16, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        // 动画循环
+        function animate() {
+            // 半透明黑色背景，创建拖尾效果
+            ctx.fillStyle = 'rgba(10, 10, 26, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制中央大爱心
+            drawMainHeart();
+            
+            // 更新和绘制所有粒子
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+            
+            requestAnimationFrame(animate);
+        }
+        
+        // 显示隐藏的表白信息
+        document.getElementById('showMessage').addEventListener('click', function() {
+            const hiddenMessage = document.getElementById('hiddenMessage');
+            hiddenMessage.style.display = 'block';
+            this.style.display = 'none';
+            
+            // 添加一些额外的爱心粒子
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const p = new Particle();
+                    p.color = `hsl(${Math.random() * 30 + 330}, 100%, 70%)`;
+                    p.size = Math.random() * 3 + 1;
+                    particles.push(p);
+                    
+                    // 30秒后移除这个粒子
+                    setTimeout(() => {
+                        const index = particles.indexOf(p);
+                        if (index > -1) {
+                            particles.splice(index, 1);
+                        }
+                    }, 30000);
+                }, i * 100);
+            }
+        });
+        
+        // 初始化并开始动画
+        initParticles();
+        animate();
+        
+        // 添加一些交互效果：点击屏幕添加爱心
+        canvas.addEventListener('click', function(e) {
+            for (let i = 0; i < 10; i++) {
+                setTimeout(() => {
+                    const p = new Particle();
+                    p.x = e.clientX;
+                    p.y = e.clientY;
+                    p.color = `hsl(${Math.random() * 30 + 330}, 100%, 70%)`;
+                    p.size = Math.random() * 2.5 + 1;
+                    particles.push(p);
+                    
+                    // 10秒后移除这个粒子
+                    setTimeout(() => {
+                        const index = particles.indexOf(p);
+                        if (index > -1) {
+                            particles.splice(index, 1);
+                        }
+                    }, 10000);
+                }, i * 50);
+            }
+        });
+    </script>
+</body>
+</html>
